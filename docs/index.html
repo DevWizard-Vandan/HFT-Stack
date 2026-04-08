@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>HFT Stack — Titan + Vajra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #080807;
+      --surface:   #0f0f0e;
+      --surface2:  #141413;
+      --surface3:  #1c1c1a;
+      --border:    #222220;
+      --border2:   #2e2e2b;
+      --text:      #dddbd6;
+      --muted:     #6b6b63;
+      --faint:     #323230;
+      --yellow:    #facc15;
+      --yellow-d:  oklch(0.85 0.2 95 / 0.12);
+      --cyan:      #22d3ee;
+      --cyan-d:    oklch(0.8 0.15 200 / 0.10);
+      --grad:      linear-gradient(135deg, #facc15, #22d3ee);
+      --mono:      'JetBrains Mono', monospace;
+      --body:      'Inter', sans-serif;
+      --r:         0.5rem;
+      --r-lg:      0.875rem;
+      --r-xl:      1.25rem;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; scroll-padding-top: 5rem; }
+    body {
+      font-family: var(--body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.9rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: oklch(from var(--bg) l c h / 0.85);
+      backdrop-filter: blur(16px);
+    }
+    .nav-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      background: var(--grad); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a {
+      font-size: 0.78rem; color: var(--muted); text-decoration: none;
+      font-family: var(--mono); letter-spacing: 0.04em;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-gh {
+      display: flex; align-items: center; gap: 0.4rem;
+      border: 1px solid var(--border2); border-radius: var(--r);
+      padding: 0.3rem 0.75rem; font-size: 0.75rem;
+      color: var(--muted) !important;
+      transition: border-color 0.15s, color 0.15s !important;
+    }
+    .nav-gh:hover { border-color: var(--muted); color: var(--text) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; overflow: hidden;
+      padding: clamp(4rem, 8vw, 7rem) 2rem clamp(3rem, 6vw, 5rem);
+      text-align: center;
+    }
+    .hero-glow-y {
+      position: absolute; pointer-events: none;
+      width: 600px; height: 300px; top: -80px; left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, oklch(0.85 0.2 95 / 0.13) 0%, transparent 70%);
+      filter: blur(40px);
+    }
+    .hero-glow-c {
+      position: absolute; pointer-events: none;
+      width: 400px; height: 200px; bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, oklch(0.8 0.15 200 / 0.08) 0%, transparent 70%);
+      filter: blur(40px);
+    }
+    .hero-eyebrow {
+      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+    }
+    .hero-eyebrow span { width: 32px; height: 1px; background: var(--border2); display: inline-block; }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5.5vw, 4.5rem);
+      font-weight: 700; letter-spacing: -0.04em; line-height: 1.08;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: var(--grad);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(0.95rem, 2vw, 1.15rem); color: var(--muted);
+      max-width: 52ch; margin: 0 auto 2.5rem; line-height: 1.7; font-weight: 300;
+    }
+    .hero-badges {
+      display: flex; justify-content: center; align-items: center; gap: 1rem;
+      flex-wrap: wrap; margin-bottom: 2rem;
+    }
+    .hero-badge {
+      display: flex; align-items: center; gap: 0.5rem;
+      border: 1px solid var(--border2); border-radius: var(--r-lg);
+      padding: 0.5rem 1.1rem; font-family: var(--mono);
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
+      text-decoration: none; transition: all 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .hero-badge::before {
+      content: ''; position: absolute; inset: 0; opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .hero-badge:hover::before { opacity: 1; }
+    .badge-titan {
+      color: var(--yellow); border-color: oklch(0.85 0.2 95 / 0.3);
+      background: var(--yellow-d);
+    }
+    .badge-titan::before { background: var(--yellow-d); }
+    .badge-titan:hover { border-color: var(--yellow); }
+    .badge-vajra {
+      color: var(--cyan); border-color: oklch(0.8 0.15 200 / 0.3);
+      background: var(--cyan-d);
+    }
+    .badge-vajra::before { background: var(--cyan-d); }
+    .badge-vajra:hover { border-color: var(--cyan); }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; animation: pulse 1.4s ease-in-out infinite; }
+    .badge-titan .badge-dot { background: var(--yellow); }
+    .badge-vajra .badge-dot { background: var(--cyan); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* cycling tagline */
+    .tagline-cycle {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--muted);
+      height: 1.4rem; overflow: hidden; position: relative;
+    }
+    .tagline-inner {
+      display: flex; flex-direction: column;
+      animation: cycleTag 8s steps(1) infinite;
+    }
+    .tagline-inner span { height: 1.4rem; line-height: 1.4rem; }
+    @keyframes cycleTag {
+      0%   { transform: translateY(0); }
+      25%  { transform: translateY(-1.4rem); }
+      50%  { transform: translateY(-2.8rem); }
+      75%  { transform: translateY(-4.2rem); }
+    }
+
+    /* ── SECTION WRAPPER ── */
+    .section { padding: clamp(3rem, 6vw, 5rem) 2rem; position: relative; z-index: 1; }
+    .section-inner { max-width: 1080px; margin: 0 auto; }
+    .section-label {
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .section-title {
+      font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700;
+      letter-spacing: -0.03em; margin-bottom: 0.75rem;
+    }
+    .section-desc {
+      color: var(--muted); font-size: 0.95rem; max-width: 56ch;
+      line-height: 1.75; margin-bottom: 2.5rem; font-weight: 300;
+    }
+
+    /* ── ANIMATION PLACEHOLDER ── */
+    .anim-placeholder {
+      border: 1px dashed var(--border2); border-radius: var(--r-xl);
+      background: var(--surface);
+      height: 420px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1rem;
+      position: relative; overflow: hidden;
+    }
+    .anim-placeholder::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 40% at 50% 50%,
+        oklch(0.85 0.2 95 / 0.04) 0%,
+        oklch(0.8 0.15 200 / 0.04) 50%,
+        transparent 100%);
+    }
+    .anim-icon {
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 1px dashed var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+    }
+    .anim-placeholder h3 {
+      font-family: var(--mono); font-size: 0.85rem; color: var(--muted);
+      font-weight: 600; letter-spacing: 0.04em;
+    }
+    .anim-placeholder p {
+      font-size: 0.75rem; color: var(--faint); font-family: var(--mono);
+      text-align: center; max-width: 36ch; line-height: 1.6;
+    }
+    .anim-tag {
+      font-family: var(--mono); font-size: 0.65rem; padding: 0.2rem 0.6rem;
+      border-radius: 9999px; border: 1px dashed var(--border2);
+      color: var(--faint); letter-spacing: 0.06em;
+    }
+    /* INJECT animation iframe here when ready */
+    /* <iframe src="hft-animation.html" width="100%" height="420" style="border:none;border-radius:var(--r-xl);"></iframe> */
+
+    /* ── TWO ENGINES ── */
+    .engines-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    }
+    @media(max-width:680px) { .engines-grid { grid-template-columns: 1fr; } }
+    .engine-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 1.75rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .engine-card:hover { transform: translateY(-2px); }
+    .engine-card.titan { border-color: oklch(0.85 0.2 95 / 0.2); }
+    .engine-card.titan:hover { border-color: oklch(0.85 0.2 95 / 0.5); }
+    .engine-card.vajra { border-color: oklch(0.8 0.15 200 / 0.2); }
+    .engine-card.vajra:hover { border-color: oklch(0.8 0.15 200 / 0.5); }
+    .engine-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    }
+    .engine-card.titan::before { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+    .engine-card.vajra::before { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+    .engine-header {
+      display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;
+    }
+    .engine-icon {
+      width: 36px; height: 36px; border-radius: 0.5rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .titan .engine-icon { background: var(--yellow-d); border: 1px solid oklch(0.85 0.2 95 / 0.25); }
+    .vajra .engine-icon { background: var(--cyan-d); border: 1px solid oklch(0.8 0.15 200 / 0.25); }
+    .engine-name {
+      font-family: var(--mono); font-weight: 700; font-size: 1rem;
+      letter-spacing: 0.04em;
+    }
+    .titan .engine-name { color: var(--yellow); }
+    .vajra .engine-name { color: var(--cyan); }
+    .engine-role { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); }
+    .engine-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .engine-stat {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 0.6rem 0.5rem; text-align: center;
+    }
+    .engine-stat-val {
+      font-family: var(--mono); font-weight: 700; font-size: 0.8rem;
+      display: block; margin-bottom: 0.15rem;
+    }
+    .titan .engine-stat-val { color: var(--yellow); }
+    .vajra .engine-stat-val { color: var(--cyan); }
+    .engine-stat-lbl { font-size: 0.6rem; color: var(--muted); font-family: var(--mono); }
+    .engine-bullets { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .engine-bullets li {
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      font-size: 0.82rem; color: var(--muted); line-height: 1.5;
+    }
+    .bullet-dot {
+      width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 0.45rem;
+    }
+    .titan .bullet-dot { background: var(--yellow); opacity: 0.6; }
+    .vajra .bullet-dot { background: var(--cyan); opacity: 0.6; }
+    .engine-cta {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: var(--mono); font-size: 0.75rem; font-weight: 600;
+      padding: 0.5rem 1rem; border-radius: var(--r);
+      text-decoration: none; transition: all 0.15s;
+      border: 1px solid;
+    }
+    .titan .engine-cta {
+      color: var(--yellow); border-color: oklch(0.85 0.2 95 / 0.35);
+      background: var(--yellow-d);
+    }
+    .titan .engine-cta:hover { border-color: var(--yellow); background: oklch(0.85 0.2 95 / 0.18); }
+    .vajra .engine-cta {
+      color: var(--cyan); border-color: oklch(0.8 0.15 200 / 0.35);
+      background: var(--cyan-d);
+    }
+    .vajra .engine-cta:hover { border-color: var(--cyan); background: oklch(0.8 0.15 200 / 0.15); }
+
+    /* ── INTEGRATION STORY ── */
+    .story-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .story-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; position: relative;
+    }
+    @media(max-width:720px) { .story-grid { grid-template-columns: 1fr; } }
+    .story-col {
+      padding: 2rem 1.75rem; border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .story-col:last-child { border-right: none; }
+    .story-col-num {
+      font-family: var(--mono); font-size: 2rem; font-weight: 700;
+      opacity: 0.06; position: absolute; top: 1.5rem; right: 1.5rem;
+      line-height: 1;
+    }
+    .story-col-label {
+      font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 0.75rem; font-weight: 600;
+    }
+    .story-col:nth-child(1) .story-col-label { color: var(--muted); }
+    .story-col:nth-child(2) .story-col-label { color: var(--yellow); }
+    .story-col:nth-child(3) .story-col-label { color: var(--cyan); }
+    .story-col h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
+    .story-col p { font-size: 0.83rem; color: var(--muted); line-height: 1.8; font-weight: 300; }
+
+    /* ── DNA TABLE ── */
+    .dna-table-wrap {
+      border: 1px solid var(--border); border-radius: var(--r-xl);
+      overflow: hidden; background: var(--surface);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+    thead th {
+      padding: 0.75rem 1.25rem; text-align: left;
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted); font-weight: 600;
+    }
+    thead th:nth-child(2) { color: var(--yellow); }
+    thead th:nth-child(3) { color: var(--cyan); }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td {
+      padding: 0.75rem 1.25rem;
+      font-family: var(--mono); font-size: 0.75rem; color: var(--muted);
+    }
+    tbody td:first-child { color: var(--text); font-weight: 600; }
+    tbody td:nth-child(2) { color: oklch(0.85 0.2 95 / 0.9); }
+    tbody td:nth-child(3) { color: oklch(0.8 0.15 200 / 0.9); }
+
+    /* ── TIMELINE ── */
+    .timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+    .timeline::before {
+      content: ''; position: absolute; left: 5.5rem; top: 0; bottom: 0;
+      width: 1px; background: var(--border);
+    }
+    @media(max-width:560px) { .timeline::before { left: 3.5rem; } }
+    .tl-item {
+      display: grid; grid-template-columns: 5.5rem 1.5rem 1fr;
+      gap: 0 1rem; align-items: flex-start; padding: 0.85rem 0;
+      position: relative;
+    }
+    @media(max-width:560px) { .tl-item { grid-template-columns: 3.5rem 1.5rem 1fr; } }
+    .tl-date {
+      font-family: var(--mono); font-size: 0.65rem; color: var(--faint);
+      text-align: right; padding-top: 0.2rem; letter-spacing: 0.04em;
+    }
+    .tl-dot-wrap {
+      display: flex; justify-content: center; padding-top: 0.2rem;
+      position: relative; z-index: 1;
+    }
+    .tl-dot {
+      width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--bg);
+      flex-shrink: 0;
+    }
+    .tl-dot.titan { background: var(--yellow); }
+    .tl-dot.vajra { background: var(--cyan); }
+    .tl-dot.both {
+      background: linear-gradient(135deg, var(--yellow), var(--cyan));
+    }
+    .tl-content {}
+    .tl-tag {
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+      text-transform: uppercase; font-weight: 700; margin-bottom: 0.2rem;
+      display: block;
+    }
+    .tl-tag.titan { color: var(--yellow); }
+    .tl-tag.vajra { color: var(--cyan); }
+    .tl-tag.both { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .tl-text { font-size: 0.82rem; color: var(--muted); line-height: 1.5; font-weight: 300; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .footer-grad-line {
+      width: 200px; height: 1px; background: var(--grad);
+      margin: 0 auto 2rem; opacity: 0.4; border-radius: 9999px;
+    }
+    .footer-ctas {
+      display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .footer-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 600;
+      padding: 0.6rem 1.25rem; border-radius: var(--r); text-decoration: none;
+      border: 1px solid; transition: all 0.15s;
+    }
+    .footer-cta.titan {
+      color: var(--yellow); border-color: oklch(0.85 0.2 95 / 0.35);
+      background: var(--yellow-d);
+    }
+    .footer-cta.titan:hover { border-color: var(--yellow); }
+    .footer-cta.vajra {
+      color: var(--cyan); border-color: oklch(0.8 0.15 200 / 0.35);
+      background: var(--cyan-d);
+    }
+    .footer-cta.vajra:hover { border-color: var(--cyan); }
+    .footer-byline {
+      font-family: var(--mono); font-size: 0.7rem; color: var(--faint);
+      letter-spacing: 0.06em;
+    }
+    .footer-byline a { color: var(--muted); text-decoration: none; }
+    .footer-byline a:hover { color: var(--text); }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">HFT // STACK</div>
+  <div class="nav-links">
+    <a href="#architecture">Architecture</a>
+    <a href="#engines">Engines</a>
+    <a href="#dna">DNA</a>
+    <a href="#timeline">Timeline</a>
+    <a class="nav-gh" href="https://github.com/DevWizard-Vandan" target="_blank" rel="noopener noreferrer">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow-y"></div>
+  <div class="hero-glow-c"></div>
+
+  <div class="hero-eyebrow">
+    <span></span>
+    Built from first principles in Rust
+    <span></span>
+  </div>
+
+  <h1>A Complete<br/><em>HFT Infrastructure</em></h1>
+
+  <p class="hero-sub">
+    A 12.8M match/sec execution engine paired with a distributed vector database
+    for pattern recognition. Two systems. One stack. Zero dependencies on existing
+    infrastructure.
+  </p>
+
+  <div class="hero-badges">
+    <a class="hero-badge badge-titan" href="https://devwizard-vandan.github.io/Titan" target="_blank" rel="noopener noreferrer">
+      <div class="badge-dot"></div>
+      ⚡ TITAN — Matching Engine
+    </a>
+    <div style="display:flex;align-items:center;font-family:var(--mono);font-size:0.65rem;color:var(--faint);">+</div>
+    <a class="hero-badge badge-vajra" href="https://devwizard-vandan.github.io/Vajra" target="_blank" rel="noopener noreferrer">
+      <div class="badge-dot"></div>
+      🔷 VAJRA — Vector Database
+    </a>
+  </div>
+
+  <div class="tagline-cycle">
+    <div class="tagline-inner">
+      <span>// sub-microsecond match latency</span>
+      <span>// zero allocations on hot path</span>
+      <span>// raft consensus — independently implemented</span>
+      <span>// HNSW O(log N) approximate nearest neighbour</span>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE ANIMATION -->
+<section class="section" id="architecture">
+  <div class="section-inner">
+    <div class="section-label">01 — Architecture</div>
+    <h2 class="section-title">Data flows through the stack</h2>
+    <p class="section-desc reveal">
+      Orders arrive at Titan's TCP gateway, match at microsecond speed via price-time priority,
+      and emit fill events. Those fills become vectors in Vajra — indexed for semantic pattern
+      search across millions of historical trades.
+    </p>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ANIMATION PLACEHOLDER
+         Replace the entire .anim-placeholder div below with:
+         <iframe src="hft-animation.html" width="100%" height="420"
+           style="border:none; border-radius:1.25rem;" loading="lazy"></iframe>
+         once hft-animation.html is built.
+    ════════════════════════════════════════════════════════════ -->
+    <div class="anim-placeholder reveal">
+      <div class="anim-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="2.5"/>
+          <line x1="12" y1="2" x2="12" y2="9.5"/>
+          <line x1="12" y1="14.5" x2="12" y2="22"/>
+          <line x1="2" y1="8.5" x2="9" y2="12"/>
+          <line x1="15" y1="12" x2="22" y2="8.5"/>
+        </svg>
+      </div>
+      <h3>// ANIMATION PLACEHOLDER</h3>
+      <p>Interactive data-flow animation — Titan → Fill Event → Vajra<br/>
+         Replace this block with hft-animation.html iframe when ready</p>
+      <div class="anim-tag">hft-animation.html · coming next</div>
+    </div>
+    <!-- END PLACEHOLDER -->
+
+  </div>
+</section>
+
+<!-- TWO ENGINES -->
+<section class="section" id="engines" style="padding-top:0;">
+  <div class="section-inner">
+    <div class="section-label">02 — The Engines</div>
+    <h2 class="section-title">Two systems. One purpose.</h2>
+    <p class="section-desc reveal">
+      Titan handles execution — price-time priority matching at hardware limits.
+      Vajra handles memory — indexing fills as vectors for pattern recognition.
+      Each is fault-tolerant independently. Together they form a complete system.
+    </p>
+
+    <div class="engines-grid reveal">
+      <!-- TITAN -->
+      <div class="engine-card titan">
+        <div class="engine-header">
+          <div class="engine-icon">⚡</div>
+          <div>
+            <div class="engine-name">TITAN</div>
+            <div class="engine-role">The Execution Layer</div>
+          </div>
+        </div>
+        <div class="engine-stats">
+          <div class="engine-stat">
+            <span class="engine-stat-val">12.8M</span>
+            <span class="engine-stat-lbl">matches/sec</span>
+          </div>
+          <div class="engine-stat">
+            <span class="engine-stat-val">&lt;78ns</span>
+            <span class="engine-stat-lbl">P99 latency</span>
+          </div>
+          <div class="engine-stat">
+            <span class="engine-stat-val">0 alloc</span>
+            <span class="engine-stat-lbl">hot path</span>
+          </div>
+        </div>
+        <ul class="engine-bullets">
+          <li><span class="bullet-dot"></span>Lock-free ring buffer for order ingestion — no heap allocation on the critical path</li>
+          <li><span class="bullet-dot"></span>Fixed-point arithmetic eliminates floating-point rounding in price comparison</li>
+          <li><span class="bullet-dot"></span>Raft consensus for leader election — cluster survives single node failure in &lt;300ms</li>
+          <li><span class="bullet-dot"></span>RDTSC-based benchmarking — cycle-accurate latency measurement</li>
+          <li><span class="bullet-dot"></span>Cache-line padded ring slots prevent false sharing across cores</li>
+        </ul>
+        <a class="engine-cta" href="https://devwizard-vandan.github.io/Titan" target="_blank" rel="noopener noreferrer">
+          View Live Demo →
+        </a>
+      </div>
+
+      <!-- VAJRA -->
+      <div class="engine-card vajra">
+        <div class="engine-header">
+          <div class="engine-icon">🔷</div>
+          <div>
+            <div class="engine-name">VAJRA</div>
+            <div class="engine-role">The Memory Layer</div>
+          </div>
+        </div>
+        <div class="engine-stats">
+          <div class="engine-stat">
+            <span class="engine-stat-val">110</span>
+            <span class="engine-stat-lbl">tests passing</span>
+          </div>
+          <div class="engine-stat">
+            <span class="engine-stat-val">O(log N)</span>
+            <span class="engine-stat-lbl">search</span>
+          </div>
+          <div class="engine-stat">
+            <span class="engine-stat-val">95%+</span>
+            <span class="engine-stat-lbl">recall</span>
+          </div>
+        </div>
+        <ul class="engine-bullets">
+          <li><span class="bullet-dot"></span>HNSW graph lives entirely in RAM — sub-millisecond approximate nearest neighbour search</li>
+          <li><span class="bullet-dot"></span>Write-Ahead Log with CRC32 checksums — survives crash mid-write, recovers on restart</li>
+          <li><span class="bullet-dot"></span>Raft consensus with Pre-Vote extension — prevents term inflation during network partitions</li>
+          <li><span class="bullet-dot"></span>Biased tokio::select! — heartbeats always fire before client requests, zero false elections</li>
+          <li><span class="bullet-dot"></span>gRPC peer-to-peer transport — protobuf-encoded log replication across nodes</li>
+        </ul>
+        <a class="engine-cta" href="https://devwizard-vandan.github.io/Vajra" target="_blank" rel="noopener noreferrer">
+          View Live Demo →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATION STORY -->
+<section class="story-section">
+  <div class="section-inner" style="padding: clamp(3rem,6vw,5rem) 2rem; max-width:1080px; margin:0 auto;">
+    <div class="section-label">03 — Why They Belong Together</div>
+    <div class="story-grid reveal">
+      <div class="story-col">
+        <div class="story-col-num">01</div>
+        <div class="story-col-label">The Problem</div>
+        <h3>HFT systems match fast but have no memory</h3>
+        <p>
+          Modern matching engines are extraordinarily fast — but entirely stateless.
+          They can tell you a trade happened. They cannot tell you if they've seen
+          this price pattern before, or whether a particular order flow precedes a crash.
+          Speed without memory is blind execution.
+        </p>
+      </div>
+      <div class="story-col">
+        <div class="story-col-num">02</div>
+        <div class="story-col-label">The Architecture</div>
+        <h3>Titan executes. Vajra remembers.</h3>
+        <p>
+          Fill events from Titan become embedding vectors in Vajra.
+          Every matched trade is indexed — price, volume, time, order book
+          state at the moment of match. When a new pattern arrives,
+          Vajra retrieves the 10 most similar historical fills in O(log N) time.
+          The execution layer and the memory layer share the same consensus primitive: Raft.
+        </p>
+      </div>
+      <div class="story-col">
+        <div class="story-col-num">03</div>
+        <div class="story-col-label">The Decision</div>
+        <h3>Why build both from scratch?</h3>
+        <p>
+          Using Milvus or an existing matching engine would have answered none of
+          the questions I actually had. I wanted to understand why Raft uses
+          Pre-Vote. Why HNSW beats KD-trees at high dimension. Why cache-line
+          padding matters at 12M ops/sec. You only learn that by building it wrong
+          first, then fixing it.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DNA TABLE -->
+<section class="section" id="dna">
+  <div class="section-inner">
+    <div class="section-label">04 — Shared DNA</div>
+    <h2 class="section-title">Same instincts. Different problems.</h2>
+    <p class="section-desc reveal">
+      Both systems were designed with the same philosophy: correctness first,
+      then performance, then fault tolerance. The parallel design decisions
+      are not coincidental.
+    </p>
+
+    <div class="dna-table-wrap reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Design Decision</th>
+            <th>⚡ TITAN</th>
+            <th>🔷 VAJRA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Consensus</td><td>Raft — leader election</td><td>Raft + Pre-Vote extension</td></tr>
+          <tr><td>Language</td><td>Rust 1.75+</td><td>Rust 1.75+</td></tr>
+          <tr><td>Latency target</td><td>&lt;100ns P99</td><td>&lt;1ms P99</td></tr>
+          <tr><td>Hot path allocation</td><td>Zero — ring buffer</td><td>Zero — HNSW in-place</td></tr>
+          <tr><td>Durability</td><td>Ring buffer snapshots</td><td>WAL + CRC32 checksums</td></tr>
+          <tr><td>Fault tolerance</td><td>Leader re-election &lt;300ms</td><td>Log replication + recovery</td></tr>
+          <tr><td>Benchmarking</td><td>RDTSC cycle counter</td><td>Criterion micro-benchmarks</td></tr>
+          <tr><td>Transport</td><td>Custom TCP gateway</td><td>gRPC + protobuf</td></tr>
+          <tr><td>Test coverage</td><td>33 tests — all passing</td><td>110 tests — all passing</td></tr>
+          <tr><td>Build system</td><td>Cargo workspace (8 crates)</td><td>Cargo workspace (6 crates)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="section" id="timeline" style="padding-top:0;">
+  <div class="section-inner">
+    <div class="section-label">05 — Build Log</div>
+    <h2 class="section-title">How it came together.</h2>
+    <p class="section-desc reveal">From late-night tinkering to a complete HFT stack.</p>
+
+    <div class="timeline reveal">
+      <div class="tl-item">
+        <span class="tl-date">Nov '24</span>
+        <div class="tl-dot-wrap"><div class="tl-dot vajra"></div></div>
+        <div class="tl-content">
+          <span class="tl-tag vajra">VAJRA</span>
+          <div class="tl-text">First HNSW implementation — brute force recall verification against the graph. Understood why approximate nearest neighbour exists.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-date">Dec '24</span>
+        <div class="tl-dot-wrap"><div class="tl-dot vajra"></div></div>
+        <div class="tl-content">
+          <span class="tl-tag vajra">VAJRA</span>
+          <div class="tl-text">Raft consensus working. 3-node cluster survives leader crash. Pre-Vote extension added after discovering term inflation bug.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-date">Jan '25</span>
+        <div class="tl-dot-wrap"><div class="tl-dot vajra"></div></div>
+        <div class="tl-content">
+          <span class="tl-tag vajra">VAJRA</span>
+          <div class="tl-text">110 tests passing across all 6 crates. WAL corruption recovery, network partition handling, biased reactor — all verified.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-date">Feb '25</span>
+        <div class="tl-dot-wrap"><div class="tl-dot titan"></div></div>
+        <div class="tl-content">
+          <span class="tl-tag titan">TITAN</span>
+          <div class="tl-text">Ring buffer design started. First attempt used a Vec — 2.1M/sec. Switched to fixed-size lock-free ring — immediately 7× faster.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-date">Mar '25</span>
+        <div class="tl-dot-wrap"><div class="tl-dot titan"></div></div>
+        <div class="tl-content">
+          <span class="tl-tag titan">TITAN</span>
+          <div class="tl-text">12.8M matches/sec benchmark hit. Cache-line padding eliminated false sharing. Fixed-point arithmetic replaced f64 in price comparison.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <span class="tl-date">Apr '25</span>
+        <div class="tl-dot-wrap"><div class="tl-dot both"></div></div>
+        <div class="tl-content">
+          <span class="tl-tag both">TITAN + VAJRA</span>
+          <div class="tl-text">Unified HFT stack conceptualized. Both projects implement Raft independently. Fill events from Titan map directly to Vajra vector upserts. The system is complete.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grad-line"></div>
+  <div class="footer-ctas">
+    <a class="footer-cta titan" href="https://github.com/DevWizard-Vandan/Titan" target="_blank" rel="noopener noreferrer">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      Titan on GitHub →
+    </a>
+    <a class="footer-cta vajra" href="https://github.com/DevWizard-Vandan/Vajra" target="_blank" rel="noopener noreferrer">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      Vajra on GitHub →
+    </a>
+  </div>
+  <div class="footer-byline">
+    Built by <a href="https://github.com/DevWizard-Vandan" target="_blank" rel="noopener noreferrer">Vandan Sharma</a>
+    &nbsp;·&nbsp; Engineering Student, Pimpri-Chinchwad
+    &nbsp;·&nbsp; Rust · Systems · HFT
+  </div>
+</footer>
+
+<script>
+// Scroll reveal
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
